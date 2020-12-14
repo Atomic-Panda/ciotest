@@ -16,6 +16,7 @@
 #include <cassert>
 #include <random>
 #include <algorithm>
+#include <dirent.h>
 
 using namespace std;
 
@@ -88,7 +89,12 @@ vector<char> GenerateData(std::size_t bytes)
     return data;
 }
 
-int main(int argc, char *argv[]) {
+void InitialFolder(){
+    system("rm -rf dat");
+    system("mkdir dat");
+}
+int main(int argc, char *argv[]){
+    InitialFolder();
     if(argc < 3){
         printf("need more args. Please try again\n");
         return 0;
@@ -182,8 +188,8 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < file_count; ++i) {
         char file_name[50];
-        sprintf(file_name, "../dat/test_file_%d", i);
-        FILE *f = files[i] = fopen(file_name, "w");       
+        sprintf(file_name, "./dat/test_file_%d", i);
+        FILE *f = files[i] = fopen(file_name, "w+");       
         // fill the file with character 'a'
         string s(1024, 'a');
         for (int j = 0; j < file_size / 1024; ++j){
@@ -196,37 +202,90 @@ int main(int argc, char *argv[]) {
         sync_file(f);  // ensure the changes have been commited to real hardware
         printf("%s created.\n", file_name);
     }
-
+    int test_mode;
+    cin >> test_mode;
     // write and read randomly to test the rand IO performance
-    printf("--- Performing writing test ---\n");
-    unsigned long long total_write_count = 0;
-    unsigned long long total_write_size = 0;
-    double write_duration = 0.0;
-    while (1) {
-        // select a random file
-        data = GenerateData(file_size);
-        int file_ind = rand_range(file_count);
-        FILE *f = files[file_ind];
+    if(test_mode == 0){
+        printf("--- Performing writing test ---\n");
+        unsigned long long total_write_count = 0;
+        unsigned long long total_write_size = 0;
+        double write_duration = 0.0;
+        int cnt = 0;
+        double aveSpeed;
+        while (1) {
+            cnt ++;
+            // select a random file
+            data = GenerateData(file_size);
+            int file_ind = rand_range(file_count);
+            FILE *f = files[file_ind];
 
-        auto start_time = chrono::system_clock::now();
-        fseek(f, 0, SEEK_SET);
-        fwrite(&data[0], sizeof(char), file_size, f);
-        sync_file(f);
-        total_write_size += file_size;
+            auto start_time = chrono::system_clock::now();
+            fseek(f, 0, SEEK_SET);
+            fwrite(&data[0], sizeof(char), file_size, f);
+            sync_file(f);
+            total_write_size += file_size;
 
-        auto current_time = chrono::system_clock::now();
-        auto duration = chrono::duration<double>(current_time - start_time);
-        write_duration += duration.count();
+            auto current_time = chrono::system_clock::now();
+            auto duration = chrono::duration<double>(current_time - start_time);
+            write_duration += duration.count();
 
-        if (++total_write_count % 100 == 0) {
-            printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
-                    total_write_count, file_size_to_string(total_write_size).c_str(), write_duration);
-            printf("Average write speed is: %s /s.\n", file_size_to_string(total_write_size/write_duration).c_str()); 
+            if (++total_write_count % 100 == 0) {
+                printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
+                        total_write_count, file_size_to_string(total_write_size).c_str(), write_duration);
+                printf("Average write speed is: %s /s.\n", file_size_to_string(total_write_size/write_duration).c_str()); 
+            }
+            // test time exceed to 1024*16 && aveSpeed being stable
+            if((cnt > 1024 * 128) && (total_write_size / write_duration - aveSpeed < 1024*1024 )){
+                break;
+            }
+            else{
+                aveSpeed = total_write_size / write_duration;
+            }
         }
     }
+    else if(test_mode == 1){
+        // read test
+        printf("--- Performing reading test ---\n");
+        unsigned long long total_read_count = 0;
+        unsigned long long total_read_size = 0;
+        double read_duration = 0.0;
+        int cnt = 0;
+        double aveSpeed;
+        char * buffer = new char[file_size];
+        while (1) {
+            cnt ++;
+            // select a random file
+            int file_ind = rand_range(file_count);
+            FILE *f = files[file_ind];
 
-    // Since the program is assumed to never end, we don't delete or clean anything here
+            auto start_time = chrono::system_clock::now();
+            fseek(f, 0, SEEK_SET);
+            int read_size = fread(buffer, sizeof(char), file_size, f);
+            if(read_size != file_size){
+                printf("Error occurs while reading.\n");
+                return 1;
+            }
+            sync_file(f);
+            total_read_size += file_size;
 
+            auto current_time = chrono::system_clock::now();
+            auto duration = chrono::duration<double>(current_time - start_time);
+            read_duration += duration.count();
+
+            if (++total_read_count % 100 == 0) {
+                printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
+                        total_read_count, file_size_to_string(total_read_size).c_str(), read_duration);
+                printf("Average write speed is: %s /s.\n", file_size_to_string(total_read_size/read_duration).c_str()); 
+            }
+            // test time exceed to 1024*16 && aveSpeed being stable
+            if((cnt > 1024 * 128) && (total_read_size / read_duration - aveSpeed < 1024*32 )){
+                break;
+            }
+            else{
+                aveSpeed = total_read_size / read_duration;
+            }
+        }
+    }
     return 0;
 }
 
