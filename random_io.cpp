@@ -79,8 +79,8 @@ void sync_file(int fileno){
 }
 
 // generate data to write
-vector<char> data;
 unsigned char RandomChar () { return ('a'+rand()%26); }
+vector<char> data;
 vector<char> GenerateData(std::size_t bytes)
 {
     std::vector<char> data(bytes);
@@ -93,6 +93,7 @@ void InitialFolder(){
     system("rm -rf dat");
     system("mkdir dat");
 }
+
 int main(int argc, char *argv[]){
     InitialFolder();
     if(argc < 3){
