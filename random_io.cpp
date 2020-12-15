@@ -34,6 +34,7 @@ using namespace std;
 
 int file_count = 0;
 int file_size = 0;
+int test_mode;
 
 unsigned seed = chrono::system_clock::now().time_since_epoch().count();
 default_random_engine Gn(seed);
@@ -96,15 +97,15 @@ void InitialFolder(){
 
 int main(int argc, char *argv[]){
     InitialFolder();
-    if(argc < 3){
+    if(argc < 4){
         printf("need more args. Please try again\n");
         return 0;
     }
-    else if(argc > 4){
+    else if(argc > 5){
         printf("Too many argc. Usage: ./main <FILE_NUM> <FILE_SIZE>\n");
         return 0;
     }
-    else if (argc == 3) {
+    else if (argc == 4) {
         file_count = atoi(argv[1]);  // set file count in the first parameter (if any)
         if (file_count > MAX_FILE_COUNT) {
             printf("Error: File count should be no larger than %d\n", MAX_FILE_COUNT);
@@ -121,8 +122,15 @@ int main(int argc, char *argv[]){
             printf("Error: File size should be no less than %s\n", file_size_to_string(MIN_FILE_SIZE).c_str());
             return 1;
         }
+        if(strcmp(argv[3],"read") == 0 || strcmp(argv[3], "write") == 0){
+            test_mode = ( strcmp(argv[3],"write"))? 1 : 0;
+        }
+        else{
+            printf("Please enter the test mode in the end of command. write or read.\n");
+            return 1;
+        }
     }
-    if (argc == 4) {
+    if (argc == 5) {
         file_count = atoi(argv[1]);  // set file count in the first parameter (if any)
         if (file_count > MAX_FILE_COUNT) {
             printf("Error: File count should be no larger than %d\n", MAX_FILE_COUNT);
@@ -133,7 +141,6 @@ int main(int argc, char *argv[]){
         }
         file_size = atoi(argv[2]);  // set file size in the second parameter (if any)
         string unit = (argv[3]);
-        cout << unit << endl;
         if(unit == "kb"){
             file_size *= KB;
         }
@@ -154,6 +161,13 @@ int main(int argc, char *argv[]){
             printf("Error: File size should be no less than %s\n", file_size_to_string(MIN_FILE_SIZE).c_str());
             return 1;
         }
+        if(strcmp(argv[4],"read") == 0 || strcmp(argv[4], "write") == 0){
+            test_mode = ( strcmp(argv[4],"write"))? 1 : 0;
+        }
+        else{
+            printf("Please enter the test mode in the end of command. write or read.\n");
+            return 1;
+        }
     }
 
     printf("[Test Parameters]\n");
@@ -166,26 +180,6 @@ int main(int argc, char *argv[]){
     // initialize each file
     printf("--- Initializing files ---\n");
     FILE **files = new FILE*[file_count];
-
-    // int * files_fd = new int[file_count];?
-    // memset(files_fd, -1 ,sizeof(files_fd));
-    // for (int i = 0; i < file_count; ++i) {
-    //     char file_name[50];
-    //     sprintf(file_name, "test_file_%d", i);
-    //     int curr_file = files_fd[i] = open(file_name, O_APPEND|O_RDWR|O_CREAT, 00644);
-    //     // fill the file with character 'a'
-    //     string s(1024, 'a');
-    //     for (int j = 0; j < file_size / 1024; ++j){
-    //         write(curr_file, s.c_str(), 1024);
-    //         close(curr_file);  
-    //     }
-    //     if (file_size % 1024) {
-    //         string s_rem(file_size % 1024, 'a');
-    //         write(curr_file ,s_rem.c_str(),file_size % 1024);
-    //     }
-    //     sync_file(curr_file);  // ensure the changes have been commited to real hardware
-    //     printf("%s created.\n", file_name);
-    // }
 
     for (int i = 0; i < file_count; ++i) {
         char file_name[50];
@@ -203,8 +197,6 @@ int main(int argc, char *argv[]){
         sync_file(f);  // ensure the changes have been commited to real hardware
         printf("%s created.\n", file_name);
     }
-    int test_mode;
-    cin >> test_mode;
     // write and read randomly to test the rand IO performance
     if(test_mode == 0){
         printf("--- Performing writing test ---\n");
@@ -287,20 +279,11 @@ int main(int argc, char *argv[]){
             }
         }
     }
-    return 0;
-}
+    
+    // close all the files
+    for (int i = 0; i < file_count; ++i){
+        fclose(files[i]);
+    }
 
-int rand_test(){
-    int counter[101] = {};
-    for(int i = 0; i < 10000; i++){
-        counter[rand_range(100)]++;
-    }
-    for(int i = 0; i< 101; i++){
-        cout <<i << ": ";
-        for(int j = 0; j < counter[i]; j++){
-            cout << "*";
-        }
-        cout << endl;
-    }
     return 0;
 }
