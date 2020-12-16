@@ -4,7 +4,7 @@
 // ./random_io <file_count> 4096 for 4K test
 // ./random_io <file_count> <int> <unit>
 
-// #define MULTITHREAD
+#define MULTITHREAD
 #define THREAD_COUNT 8
 
 #include <iostream>
@@ -245,6 +245,10 @@ int main(int argc, char *argv[]){
         double write_duration = 0.0;
         int cnt = 0;
         double aveSpeed;
+        vector<vector<char>> gnData;
+        for(int i = 0; i < file_count; i++){
+            gnData.push_back(GenerateData(file_size));
+        }
         #pragma omp parallel for num_threads(THREAD_COUNT)  // use openmp to create threads
         for (int i = 0; i < THREAD_COUNT; ++i) {
             printf("%d\n", i );
@@ -252,27 +256,28 @@ int main(int argc, char *argv[]){
             while (1) {
                 cnt ++;
                 // select a random file
-                data = GenerateData(file_size);
-                int file_ind = rand_range(file_count, gn);
-                FILE *f = files[file_ind];
-
+                
+                int file_ind = rand_range(file_count/THREAD_COUNT, gn);
+                FILE *f = files[file_ind + file_count * i/THREAD_COUNT];
+                int data_ind = rand_range(file_count, gn);
+                
                 auto start_time = chrono::system_clock::now();
                 fseek(f, 0, SEEK_SET);
-                fwrite(&data[0], sizeof(char), file_size, f);
+                fwrite(&gnData[data_ind][0], sizeof(char), file_size, f);
                 sync_file(f);
                 
                 #pragma omp critical
                 {
-                    total_write_size += file_size;
-                    auto current_time = chrono::system_clock::now();
-                    auto duration = chrono::duration<double>(current_time - start_time);
-                    write_duration += duration.count();
-                    aveSpeed = total_write_size / write_duration;
-                    if (++total_write_count % 100 == 0) {
-                        printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
-                                total_write_count, file_size_to_string(total_write_size).c_str(), write_duration);
-                        printf("Average write speed is: %s /s.\n", file_size_to_string(THREAD_COUNT*total_write_size/write_duration).c_str()); 
-                    }
+                total_write_size += file_size;
+                auto current_time = chrono::system_clock::now();
+                auto duration = chrono::duration<double>(current_time - start_time);
+                write_duration += duration.count();
+                aveSpeed = total_write_size / write_duration;
+                if (++total_write_count % 100 == 0) {
+                    printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
+                            total_write_count, file_size_to_string(total_write_size).c_str(), write_duration);
+                    printf("Average write speed is: %s /s.\n", file_size_to_string(total_write_size/write_duration).c_str()); 
+                }
                 }
                 // test time exceed to 1024*16 && aveSpeed being stable
                 if((cnt > 1024 * 64) && (total_write_size / write_duration - aveSpeed < 1024*1024 )){
