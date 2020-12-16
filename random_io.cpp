@@ -4,7 +4,7 @@
 // ./random_io <file_count> 4096 for 4K test
 // ./random_io <file_count> <int> <unit>
 
-#define MULTITHREAD
+// #define MULTITHREAD
 #define THREAD_COUNT 8
 
 #include <iostream>
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]){
             if (++total_write_count % 100 == 0) {
                 printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
                         total_write_count, file_size_to_string(total_write_size).c_str(), write_duration);
-                printf("Average write speed is: %s /s.\n", file_size_to_string(THREAD_COUNT*total_write_size/write_duration).c_str()); 
+                printf("Average write speed is: %s /s.\n", file_size_to_string(total_write_size/write_duration).c_str()); 
             }
 
             // test time exceed to 1024*16 && aveSpeed being stable
@@ -253,8 +253,8 @@ int main(int argc, char *argv[]){
                 cnt ++;
                 // select a random file
                 data = GenerateData(file_size);
-                // int file_ind = rand_range(file_count, gn);
-                FILE *f = files[i];
+                int file_ind = rand_range(file_count, gn);
+                FILE *f = files[file_ind];
 
                 auto start_time = chrono::system_clock::now();
                 fseek(f, 0, SEEK_SET);
@@ -280,8 +280,8 @@ int main(int argc, char *argv[]){
                 }
             }
         }
-    }
 #endif
+    }
     else if(test_mode == 1){
         // read test
         printf("--- Performing reading test ---\n");
