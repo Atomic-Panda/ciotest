@@ -3,3 +3,5 @@ test
 random_io
 .vscode/settings.json
 dat/
+fragment.cpp
+test.cpp

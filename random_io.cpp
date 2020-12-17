@@ -259,11 +259,11 @@ int main(int argc, char *argv[]){
                 
                 int file_ind = rand_range(file_count/THREAD_COUNT, gn);
                 FILE *f = files[file_ind + file_count * i/THREAD_COUNT];
-                int data_ind = rand_range(file_count, gn);
+                int data_ind = rand_range(file_count/THREAD_COUNT, gn);
                 
                 auto start_time = chrono::system_clock::now();
                 fseek(f, 0, SEEK_SET);
-                fwrite(&gnData[data_ind][0], sizeof(char), file_size, f);
+                fwrite(&gnData[data_ind + file_count * i/THREAD_COUNT][0], sizeof(char), file_size, f);
                 sync_file(f);
                 
                 #pragma omp critical
