@@ -105,7 +105,7 @@ int main(int argc, char *argv[]){
         return 0;
     }
     else if(argc > 4){
-        printf("Too many args. Usage: ./main <FILE_NUM> <FILE_SIZE> <write/read>\n");
+        printf("Too many args. Usage: ./main <FILE_NUM> <FILE_SIZE>\n");
         return 0;
     }
     else if (argc == 3) {
@@ -219,7 +219,7 @@ int main(int argc, char *argv[]){
         }
 
         // test time exceed to 1024*16 && aveSpeed being stable
-        if(cnt > 1024 * 16){
+        if(cnt >= 1024 * 16){
             break;
         }
     }
@@ -265,13 +265,16 @@ int main(int argc, char *argv[]){
             }
             }
             // test time exceed to 1024*16 && aveSpeed being stable
-            if(cnt > 1024 * 64){
+            if(cnt >= 1024 * 64){
                 break;
             }
         }
     }
 #endif
-
+    printf("\n\nTest done.\n");
+    printf("Write count: %lld; Total write size: %s; Elapsed time: %.4lf seconds\n",
+                        total_write_count, file_size_to_string(total_write_size).c_str(), write_duration);
+    printf("Average write speed is: %s /s.\n", file_size_to_string(total_write_size/write_duration).c_str());
     // close all the files
     for (int i = 0; i < file_count; ++i){
         fclose(files[i]);
